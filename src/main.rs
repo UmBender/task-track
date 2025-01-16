@@ -9,8 +9,6 @@ use crate::model::task_state::TaskState;
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let conn = ConcreteTaskRelationalManager::new(DATABASE_PATH);
-    conn.init_db();
     controller::exec();
     return Ok(());
 }

@@ -312,10 +312,6 @@ fn init() {
     init_folder();
     let conn = ConcreteTaskRelationalManager::new(DATABASE_PATH);
     conn.init_db();
-    match conn.check_table("tasks") {
-        Ok(1) => println!("TODO initialized"),
-        _ => panic!("Cannot init the todo list"),
-    }
 }
 
 pub fn exec() {

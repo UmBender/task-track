@@ -8,7 +8,7 @@ use crate::Priority;
 use crate::TaskState;
 
 pub const DATABASE_PATH: &str = "./.todo_list/info.db3";
-pub const DATABASE_DIR_PATH: &str = "./.todo_list";
+pub const DATABASE_DIR_PATH: &str = ".todo_list";
 
 pub fn init_folder() {
     fs::create_dir(DATABASE_DIR_PATH)
