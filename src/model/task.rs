@@ -7,10 +7,14 @@ use crate::Date;
 use crate::Priority;
 use crate::TaskState;
 
-const DATABASE_PATH: &str = "./.todo_list/info.db3";
+pub const DATABASE_PATH: &str = "./.todo_list/info.db3";
 pub const DATABASE_DIR_PATH: &str = "./.todo_list";
-pub const DATABASE_PATH_TEST: &str = "./.todo_list_test/test.db";
-pub const DATABASE_DIR_TEST_PATH: &str = "./.todo_list_test";
+
+pub fn init_folder() {
+    fs::create_dir(DATABASE_DIR_PATH)
+        .expect("Was not possible to create the directory for de database");
+}
+
 pub trait TaskBuilder {
     fn new() -> Self;
     fn reset(&self) -> Self;
@@ -19,6 +23,7 @@ pub trait TaskBuilder {
     fn set_description(&self, description: String) -> Self;
     fn set_name(&self, name: String) -> Self;
     fn set_term(&self, date: Date) -> Self;
+    fn set_by_task(&self, task: Task) -> Self;
     fn get_task(&mut self) -> Task;
 }
 
@@ -80,10 +85,29 @@ impl TaskBuilder for ConcreteTaskBuilder {
         new_task.term = Some(date);
         return ConcreteTaskBuilder { task: new_task };
     }
+    fn set_by_task(&self, task: Task) -> Self {
+        let mut old_task = self.task.clone();
+        old_task.id = task.id.clone();
+        old_task.name = task.name.clone();
+        if let Some(_) = task.description {
+            old_task.description = task.description.clone();
+        }
+        if let Some(_) = task.term {
+            old_task.term = task.term.clone();
+        }
+        if let Some(_) = task.task_state {
+            old_task.task_state = task.task_state.clone();
+        }
+        if let Some(_) = task.priority {
+            old_task.priority = task.priority.clone();
+        }
 
+        return ConcreteTaskBuilder { task: old_task };
+    }
     fn get_task(&mut self) -> Task {
         let mut new_task = self.task.clone();
         new_task.modification = Date::get_local_date();
+        self.reset();
         self.task = Task::new();
         return new_task;
     }
@@ -158,6 +182,19 @@ impl Task {
             task_state: None,
             priority: None,
         };
+    }
+
+    pub fn to_vec(&self) -> Vec<String> {
+        let mut infos: Vec<String> = Vec::new();
+        infos.push(self.get_id().to_string());
+        infos.push(self.get_name());
+        infos.push(self.get_modification());
+        infos.push(self.get_term());
+        infos.push(self.get_state());
+        infos.push(self.get_priority());
+        infos.push(self.get_description());
+
+        return infos;
     }
 }
 
@@ -704,7 +741,7 @@ impl ConcreteTaskRelationalManager {
         self.conn.execute("CREATE TABLE IF NOT EXISTS tasks(id TEXT PRIMARY KEY, name TEXT, description TEXT, date TEXT, term TEXT, task_state TEXT, priority TEXT)", []).unwrap();
     }
 
-    fn check_table(&self, table_name: &str) -> Result<i64, Box<dyn Error>> {
+    pub fn check_table(&self, table_name: &str) -> Result<i64, Box<dyn Error>> {
         let mut stmt = self
             .conn
             .prepare(
@@ -722,8 +759,10 @@ impl ConcreteTaskRelationalManager {
 mod tests_manager {
 
     use super::*;
+    pub const DATABASE_PATH_TEST: &str = "./.todo_list_test/test.db";
+    pub const DATABASE_DIR_TEST_PATH: &str = "./.todo_list_test";
 
-    fn init_folder() {
+    pub fn init_folder_test() {
         fs::create_dir(DATABASE_DIR_TEST_PATH)
             .expect("Was not possible to create the directory for de database");
     }
@@ -736,7 +775,7 @@ mod tests_manager {
 
     #[test]
     fn test_creation_database() {
-        init_folder();
+        init_folder_test();
         let conn = ConcreteTaskRelationalManager::new(DATABASE_PATH_TEST);
         conn.init_db();
         let count = conn.check_table("tasks");
@@ -746,7 +785,7 @@ mod tests_manager {
 
     #[test]
     fn test_insertion() {
-        init_folder();
+        init_folder_test();
         let conn = ConcreteTaskRelationalManager::new(DATABASE_PATH_TEST);
         conn.init_db();
 
@@ -774,7 +813,7 @@ mod tests_manager {
 
     #[test]
     fn test_get_id() {
-        init_folder();
+        init_folder_test();
         let conn = ConcreteTaskRelationalManager::new(DATABASE_PATH_TEST);
         conn.init_db();
         let mut task = ConcreteTaskBuilder::new()
@@ -797,7 +836,7 @@ mod tests_manager {
 
     #[test]
     fn test_get_name() {
-        init_folder();
+        init_folder_test();
         let conn = ConcreteTaskRelationalManager::new(DATABASE_PATH_TEST);
         conn.init_db();
         let name = String::from("Teste Name");
@@ -822,7 +861,7 @@ mod tests_manager {
 
     #[test]
     fn test_delete_by_id() {
-        init_folder();
+        init_folder_test();
         let conn = ConcreteTaskRelationalManager::new(DATABASE_PATH_TEST);
         conn.init_db();
         let task_id = 1;
@@ -856,7 +895,7 @@ mod tests_manager {
 
     #[test]
     fn test_delete_by_name() {
-        init_folder();
+        init_folder_test();
         let conn = ConcreteTaskRelationalManager::new(DATABASE_PATH_TEST);
         conn.init_db();
         let task_name = String::from("Task test");
@@ -890,7 +929,7 @@ mod tests_manager {
 
     #[test]
     fn test_get_tasks() {
-        init_folder();
+        init_folder_test();
         let conn = ConcreteTaskRelationalManager::new(DATABASE_PATH_TEST);
         conn.init_db();
 

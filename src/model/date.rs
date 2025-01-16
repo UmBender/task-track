@@ -1,6 +1,4 @@
 use chrono::{Datelike, Local, NaiveDate};
-use rand::prelude;
-use rusqlite::{params, Connection};
 use std::error::Error;
 use std::fmt::Display;
 
